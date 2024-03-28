@@ -1,0 +1,13 @@
+@0xsequence/contracts-library/=lib/contracts-library/src/
+@0xsequence/erc-1155/=lib/contracts-library/node_modules/@0xsequence/erc-1155/
+@0xsequence/erc20-meta-token/=lib/contracts-library/node_modules/@0xsequence/erc20-meta-token/
+@openzeppelin/=lib/contracts-library/node_modules/@openzeppelin/contracts
+@openzeppelin/contracts/=lib/contracts-library/node_modules/@openzeppelin/contracts
+contracts-library/=lib/contracts-library/src/
+ds-test/=lib/contracts-library/lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
+erc721a-upgradeable/=lib/contracts-library/node_modules/erc721a-upgradeable/
+erc721a/=lib/contracts-library/node_modules/erc721a/
+forge-std/=lib/forge-std/src/
+murky/=lib/contracts-library/lib/murky/src/
+openzeppelin-v5/=lib/openzeppelin-contracts/contracts/

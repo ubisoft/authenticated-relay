@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
+
+import {Test, console} from "forge-std/Test.sol";
+import {ProxyData, AuthenticatedProxy} from "../src/AuthenticatedProxy.sol";
+
+import {ERC721Items} from "@0xsequence/contracts-library/tokens/ERC721/presets/items/ERC721Items.sol";
+
+contract AuthenticatedProxyTest is Test {
+    
+    uint256 internal constant OWNER_PRIVATE_KEY = 0x1;
+    address internal owner;
+    address internal recipient;
+    AuthenticatedProxy internal proxy;
+    ERC721Items internal token;
+
+    event SignatureUsed(bytes32 indexed hash);
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+
+    function setUp() public {
+        owner = vm.addr(OWNER_PRIVATE_KEY);
+        recipient = vm.addr(0x2);
+        token = new ERC721Items();
+        token.initialize(
+            owner, 
+            "Test", 
+            "PFP", 
+            "ipfs://base/", 
+            "ipfs://contract/", 
+            owner, 
+            5000
+        );
+
+        proxy = new AuthenticatedProxy("AuthenticatedProxy", "1", owner);
+        vm.prank(owner);
+        token.grantRole(keccak256("MINTER_ROLE"), address(proxy));
+    }
+
+    function testProxy() public {
+        uint256 amount = 5;
+        bytes memory callData = abi.encodeWithSelector(ERC721Items.mint.selector, recipient, amount);
+        ProxyData memory data = ProxyData({
+            to: address(token),
+            validityStart: block.timestamp,
+            validityEnd: 1 days,
+            chainId: block.chainid,
+            callData: callData
+        });
+        bytes32 digest = proxy.hashTypedDataV4(data);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
+        bytes memory sig =  abi.encodePacked(r, s, v);
+
+        // Expect SignatureUsed event
+        vm.expectEmit(true, false, false, true);
+        emit SignatureUsed(digest);
+
+        // Expect Transfer events
+        vm.expectEmit(true, true, true, true);
+        for (uint256 i = 0; i < amount; i++) {
+            emit Transfer(address(0), recipient, i);
+        }
+
+        // Mint
+        proxy._call(data, sig);
+
+        // Check balance
+        uint256 balance = token.balanceOf(recipient);
+        assertEq(balance, amount);
+    }
+}
