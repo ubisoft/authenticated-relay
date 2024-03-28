@@ -5,7 +5,7 @@ import {AccessControl} from "openzeppelin-v5/access/AccessControl.sol";
 import {ECDSA} from "openzeppelin-v5/utils/cryptography/ECDSA.sol";
 import {EIP712} from "openzeppelin-v5/utils/cryptography/EIP712.sol";
 
-struct ProxyData {
+struct RelayData {
     address to;
     uint256 validityStart;
     uint256 validityEnd;
@@ -13,10 +13,10 @@ struct ProxyData {
     bytes callData;
 }
 
-contract AuthenticatedProxy is EIP712, AccessControl {
+contract AuthenticatedRelay is EIP712, AccessControl {
 
-    bytes32 public constant PROXY_DATA_TYPEHASH = keccak256(
-        "Data(address to,uint256 validity_start,uint256 validity_end,uint256 chain_id,bytes data)"
+    bytes32 public constant RELAY_DATA_TYPEHASH = keccak256(
+        "RelayData(address to,uint256 validity_start,uint256 validity_end,uint256 chain_id,bytes data)"
     );
 
     mapping(bytes32 => bool) public _usedSignatures;
@@ -37,7 +37,7 @@ contract AuthenticatedProxy is EIP712, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
     }
 
-    function _call(ProxyData calldata data, bytes memory signature) external payable returns (bytes memory) {
+    function relay(RelayData calldata data, bytes memory signature) external payable returns (bytes memory) {
         bytes32 _hash = _hashTypedDataV4(hashStruct(data));
 
         if (
@@ -65,14 +65,14 @@ contract AuthenticatedProxy is EIP712, AccessControl {
         return result;
     }
 
-    function hashTypedDataV4(ProxyData memory data) public view returns (bytes32) {
+    function hashTypedDataV4(RelayData memory data) public view returns (bytes32) {
         return _hashTypedDataV4(hashStruct(data));
     }
 
-    function hashStruct(ProxyData memory data) internal pure returns (bytes32) {
+    function hashStruct(RelayData memory data) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                PROXY_DATA_TYPEHASH,
+                RELAY_DATA_TYPEHASH,
                 data.to,
                 data.validityStart,
                 data.validityEnd,

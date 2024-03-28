@@ -2,16 +2,16 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ProxyData, AuthenticatedProxy} from "../src/AuthenticatedProxy.sol";
+import {RelayData, AuthenticatedRelay} from "../src/AuthenticatedRelay.sol";
 
 import {ERC721Items} from "@0xsequence/contracts-library/tokens/ERC721/presets/items/ERC721Items.sol";
 
-contract AuthenticatedProxyTest is Test {
+contract AuthenticatedRelayTest is Test {
     
     uint256 internal constant OWNER_PRIVATE_KEY = 0x1;
     address internal owner;
     address internal recipient;
-    AuthenticatedProxy internal proxy;
+    AuthenticatedRelay internal relay;
     ERC721Items internal token;
 
     event SignatureUsed(bytes32 indexed hash);
@@ -31,22 +31,22 @@ contract AuthenticatedProxyTest is Test {
             5000
         );
 
-        proxy = new AuthenticatedProxy("AuthenticatedProxy", "1", owner);
+        relay = new AuthenticatedRelay("AuthenticatedRelay", "1", owner);
         vm.prank(owner);
-        token.grantRole(keccak256("MINTER_ROLE"), address(proxy));
+        token.grantRole(keccak256("MINTER_ROLE"), address(relay));
     }
 
-    function testProxy() public {
+    function testRelay() public {
         uint256 amount = 5;
         bytes memory callData = abi.encodeWithSelector(ERC721Items.mint.selector, recipient, amount);
-        ProxyData memory data = ProxyData({
+        RelayData memory data = RelayData({
             to: address(token),
             validityStart: block.timestamp,
             validityEnd: 1 days,
             chainId: block.chainid,
             callData: callData
         });
-        bytes32 digest = proxy.hashTypedDataV4(data);
+        bytes32 digest = relay.hashTypedDataV4(data);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
         bytes memory sig =  abi.encodePacked(r, s, v);
 
@@ -61,7 +61,7 @@ contract AuthenticatedProxyTest is Test {
         }
 
         // Mint
-        proxy._call(data, sig);
+        relay.relay(data, sig);
 
         // Check balance
         uint256 balance = token.balanceOf(recipient);
