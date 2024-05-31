@@ -7,7 +7,6 @@ import {RelayData, AuthenticatedRelay} from "../src/AuthenticatedRelay.sol";
 import {ERC721Items} from "@0xsequence/contracts-library/tokens/ERC721/presets/items/ERC721Items.sol";
 
 contract AuthenticatedRelayTest is Test {
-    
     uint256 internal constant OWNER_PRIVATE_KEY = 0x1;
     address internal owner;
     address internal recipient;
@@ -21,15 +20,7 @@ contract AuthenticatedRelayTest is Test {
         owner = vm.addr(OWNER_PRIVATE_KEY);
         recipient = vm.addr(0x2);
         token = new ERC721Items();
-        token.initialize(
-            owner, 
-            "Test", 
-            "PFP", 
-            "ipfs://base/", 
-            "ipfs://contract/", 
-            owner, 
-            5000
-        );
+        token.initialize(owner, "Test", "PFP", "ipfs://base/", "ipfs://contract/", owner, 5000);
 
         relay = new AuthenticatedRelay("AuthenticatedRelay", "1", owner);
         vm.prank(owner);
@@ -37,9 +28,11 @@ contract AuthenticatedRelayTest is Test {
     }
 
     function testRelay() public {
+        bytes32 nonce = keccak256(abi.encode(recipient));
         uint256 amount = 5;
         bytes memory callData = abi.encodeWithSelector(ERC721Items.mint.selector, recipient, amount);
         RelayData memory data = RelayData({
+            nonce: nonce,
             to: address(token),
             validityStart: block.timestamp,
             validityEnd: 1 days,
@@ -48,11 +41,11 @@ contract AuthenticatedRelayTest is Test {
         });
         bytes32 digest = relay.hashTypedDataV4(data);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
-        bytes memory sig =  abi.encodePacked(r, s, v);
+        bytes memory sig = abi.encodePacked(r, s, v);
 
         // Expect SignatureUsed event
         vm.expectEmit(true, false, false, true);
-        emit SignatureUsed(digest);
+        emit SignatureUsed(nonce);
 
         // Expect Transfer events
         vm.expectEmit(true, true, true, true);
@@ -66,5 +59,39 @@ contract AuthenticatedRelayTest is Test {
         // Check balance
         uint256 balance = token.balanceOf(recipient);
         assertEq(balance, amount);
+    }
+
+    function testRevoke() public {
+        bytes32 nonce = keccak256(abi.encode(recipient));
+        uint256 amount = 5;
+        bytes memory callData = abi.encodeWithSelector(ERC721Items.mint.selector, recipient, amount);
+        RelayData memory data = RelayData({
+            nonce: nonce,
+            to: address(token),
+            validityStart: block.timestamp,
+            validityEnd: 1 days,
+            chainId: block.chainid,
+            callData: callData
+        });
+        bytes32 digest = relay.hashTypedDataV4(data);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
+        bytes memory sig = abi.encodePacked(r, s, v);
+
+        // Expect SignatureUsed event
+        vm.expectEmit(true, false, false, true);
+        emit SignatureUsed(nonce);
+
+        // Revoke nonce using owner private key
+        vm.prank(vm.addr(OWNER_PRIVATE_KEY));
+        relay.revoke(nonce);
+
+        // Expect AlreadyUsed revert
+        vm.expectRevert(AuthenticatedRelay.AlreadyUsed.selector);
+        // Mint
+        relay.relay(data, sig);
+
+        // Check balance
+        uint256 balance = token.balanceOf(recipient);
+        assertEq(balance, 0);
     }
 }
