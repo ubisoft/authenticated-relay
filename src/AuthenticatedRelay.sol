@@ -16,6 +16,7 @@ struct RelayData {
 
 contract AuthenticatedRelay is EIP712, AccessControl {
     bytes32 public constant RELAY_DATA_TYPEHASH = keccak256("RelayData(bytes32,address,uint256,uint256,uint256,bytes)");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     mapping(bytes32 => bool) public _usedNonces;
 
@@ -26,8 +27,9 @@ contract AuthenticatedRelay is EIP712, AccessControl {
     error Unauthorized();
     error CallFailed();
 
-    constructor(string memory _name, string memory _version, address owner) EIP712(_name, _version) {
+    constructor(string memory _name, string memory _version, address owner, address minter) EIP712(_name, _version) {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
+        _grantRole(MINTER_ROLE, minter);
     }
 
     function relay(RelayData calldata data, bytes memory signature) external payable returns (bytes memory) {
@@ -39,7 +41,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         }
 
         address recovered = ECDSA.recover(_hash, signature);
-        if (!hasRole(DEFAULT_ADMIN_ROLE, recovered)) {
+        if (!hasRole(MINTER_ROLE, recovered)) {
             revert Unauthorized();
         }
 
@@ -55,7 +57,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         return result;
     }
 
-    function revoke(bytes32 nonce) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function revoke(bytes32 nonce) external onlyRole(MINTER_ROLE) {
         if (_usedNonces[nonce]) revert AlreadyUsed();
         _usedNonces[nonce] = true;
         emit SignatureUsed(nonce);
@@ -67,7 +69,15 @@ contract AuthenticatedRelay is EIP712, AccessControl {
 
     function hashStruct(RelayData memory data) internal pure returns (bytes32) {
         return keccak256(
-            abi.encode(RELAY_DATA_TYPEHASH, data.nonce, data.to, data.validityStart, data.validityEnd, data.chainId, data.callData)
+            abi.encode(
+                RELAY_DATA_TYPEHASH,
+                data.nonce,
+                data.to,
+                data.validityStart,
+                data.validityEnd,
+                data.chainId,
+                data.callData
+            )
         );
     }
 }

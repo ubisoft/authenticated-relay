@@ -8,7 +8,9 @@ import {ERC721Items} from "@0xsequence/contracts-library/tokens/ERC721/presets/i
 
 contract AuthenticatedRelayTest is Test {
     uint256 internal constant OWNER_PRIVATE_KEY = 0x1;
+    uint256 internal constant MINTER_PRIVATE_KEY = 0xFF;
     address internal owner;
+    address internal minter;
     address internal recipient;
     AuthenticatedRelay internal relay;
     ERC721Items internal token;
@@ -18,11 +20,12 @@ contract AuthenticatedRelayTest is Test {
 
     function setUp() public {
         owner = vm.addr(OWNER_PRIVATE_KEY);
+        minter = vm.addr(MINTER_PRIVATE_KEY);
         recipient = vm.addr(0x2);
         token = new ERC721Items();
         token.initialize(owner, "Test", "PFP", "ipfs://base/", "ipfs://contract/", owner, 5000);
 
-        relay = new AuthenticatedRelay("AuthenticatedRelay", "1", owner);
+        relay = new AuthenticatedRelay("AuthenticatedRelay", "1", owner, minter);
         vm.prank(owner);
         token.grantRole(keccak256("MINTER_ROLE"), address(relay));
     }
@@ -40,7 +43,7 @@ contract AuthenticatedRelayTest is Test {
             callData: callData
         });
         bytes32 digest = relay.hashTypedDataV4(data);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(MINTER_PRIVATE_KEY, digest);
         bytes memory sig = abi.encodePacked(r, s, v);
 
         // Expect SignatureUsed event
@@ -74,15 +77,15 @@ contract AuthenticatedRelayTest is Test {
             callData: callData
         });
         bytes32 digest = relay.hashTypedDataV4(data);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(OWNER_PRIVATE_KEY, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(MINTER_PRIVATE_KEY, digest);
         bytes memory sig = abi.encodePacked(r, s, v);
 
         // Expect SignatureUsed event
         vm.expectEmit(true, false, false, true);
         emit SignatureUsed(nonce);
 
-        // Revoke nonce using owner private key
-        vm.prank(vm.addr(OWNER_PRIVATE_KEY));
+        // Revoke nonce using MINTER private key
+        vm.prank(vm.addr(MINTER_PRIVATE_KEY));
         relay.revoke(nonce);
 
         // Expect AlreadyUsed revert
