@@ -15,7 +15,10 @@ struct RelayData {
 }
 
 contract AuthenticatedRelay is EIP712, AccessControl {
-    bytes32 public constant RELAY_DATA_TYPEHASH = keccak256("RelayData(bytes32,address,uint256,uint256,uint256,bytes)");
+    bytes32 public constant RELAY_DATA_TYPEHASH = keccak256(
+        "RelayData(bytes32 nonce,address to,uint256 validityStart,uint256 validityEnd,uint256 chainId,bytes callData)"
+    );
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     mapping(bytes32 => bool) public _usedNonces;
