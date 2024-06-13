@@ -79,7 +79,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
                 data.validityStart,
                 data.validityEnd,
                 data.chainId,
-                data.callData
+                keccak256(data.callData)
             )
         );
     }
