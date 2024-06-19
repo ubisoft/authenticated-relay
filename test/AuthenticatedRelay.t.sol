@@ -15,7 +15,7 @@ contract AuthenticatedRelayTest is Test {
     AuthenticatedRelay internal relay;
     ERC721Items internal token;
 
-    event SignatureUsed(bytes32 indexed hash);
+    event SignatureUsed(bytes32 indexed hash, bool isRevoked);
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
 
     function setUp() public {
@@ -47,11 +47,11 @@ contract AuthenticatedRelayTest is Test {
         bytes memory sig = abi.encodePacked(r, s, v);
 
         // Expect SignatureUsed event
-        vm.expectEmit(true, false, false, true);
-        emit SignatureUsed(nonce);
+        vm.expectEmit();
+        emit SignatureUsed(nonce, false);
 
         // Expect Transfer events
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit();
         for (uint256 i = 0; i < amount; i++) {
             emit Transfer(address(0), recipient, i);
         }
@@ -81,8 +81,8 @@ contract AuthenticatedRelayTest is Test {
         bytes memory sig = abi.encodePacked(r, s, v);
 
         // Expect SignatureUsed event
-        vm.expectEmit(true, false, false, true);
-        emit SignatureUsed(nonce);
+        vm.expectEmit();
+        emit SignatureUsed(nonce, true);
 
         // Revoke nonce using MINTER private key
         vm.prank(vm.addr(MINTER_PRIVATE_KEY));

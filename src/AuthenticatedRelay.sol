@@ -23,7 +23,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
 
     mapping(bytes32 => bool) public _usedNonces;
 
-    event SignatureUsed(bytes32 indexed nonce);
+    event SignatureUsed(bytes32 indexed nonce, bool isRevoked);
 
     error AlreadyUsed();
     error InvalidSignature();
@@ -51,7 +51,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         if (_usedNonces[data.nonce]) revert AlreadyUsed();
         _usedNonces[data.nonce] = true;
 
-        emit SignatureUsed(data.nonce);
+        emit SignatureUsed(data.nonce, false);
 
         (bool success, bytes memory result) = data.to.call{value: msg.value}(data.callData);
         if (!success) {
@@ -63,7 +63,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
     function revoke(bytes32 nonce) external onlyRole(MINTER_ROLE) {
         if (_usedNonces[nonce]) revert AlreadyUsed();
         _usedNonces[nonce] = true;
-        emit SignatureUsed(nonce);
+        emit SignatureUsed(nonce, true);
     }
 
     function hashTypedDataV4(RelayData memory data) public view returns (bytes32) {
