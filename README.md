@@ -4,11 +4,12 @@ Solidity smart contract that verifies an authorisation signature before forwardi
 
 ## Overview
 
-The relay is deployed on-chain and is configured with an `owner` role (`DEFAULT_ADMIN_ROLE`)
+The relay is deployed on-chain and is configured with an `operator` role (`OPERATOR_ROLE`)
 The backend signs an EIP-712 message of the following structure with an owner key:
 
 ```solidity
 struct RelayData {
+    bytes32 nonce;
     address to;
     uint256 validityStart;
     uint256 validityEnd;
@@ -18,6 +19,8 @@ struct RelayData {
 ```
 
 Where `to` is the destination contract, `callData` is the ABI-encoded calldata. The relay verifies that the recovered signature matches an owner role and executes the call on the destination contract.
+
+The `operator` address can be updated by the `admin` (`DEFAULT_ADMIN_ROLE`)
 
 ## Usage
 
