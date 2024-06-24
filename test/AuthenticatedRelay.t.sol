@@ -27,7 +27,7 @@ contract AuthenticatedRelayTest is Test {
 
         relay = new AuthenticatedRelay("AuthenticatedRelay", "1", owner, operator);
         vm.prank(owner);
-        token.grantRole(keccak256("OPERATOR_ROLE"), address(relay));
+        token.grantRole(keccak256("MINTER_ROLE"), address(relay));
     }
 
     function testRelay() public {
