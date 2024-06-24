@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
 import {AccessControl} from "openzeppelin-v5/access/AccessControl.sol";
@@ -19,7 +19,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         "RelayData(bytes32 nonce,address to,uint256 validityStart,uint256 validityEnd,uint256 chainId,bytes callData)"
     );
 
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     mapping(bytes32 => bool) public _usedNonces;
 
@@ -30,9 +30,9 @@ contract AuthenticatedRelay is EIP712, AccessControl {
     error Unauthorized();
     error CallFailed();
 
-    constructor(string memory _name, string memory _version, address owner, address minter) EIP712(_name, _version) {
-        _grantRole(DEFAULT_ADMIN_ROLE, owner);
-        _grantRole(MINTER_ROLE, minter);
+    constructor(string memory _name, string memory _version, address admin, address operator) EIP712(_name, _version) {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(OPERATOR_ROLE, operator);
     }
 
     function relay(RelayData calldata data, bytes memory signature) external payable returns (bytes memory) {
@@ -44,7 +44,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         }
 
         address recovered = ECDSA.recover(_hash, signature);
-        if (!hasRole(MINTER_ROLE, recovered)) {
+        if (!hasRole(OPERATOR_ROLE, recovered)) {
             revert Unauthorized();
         }
 
@@ -60,7 +60,7 @@ contract AuthenticatedRelay is EIP712, AccessControl {
         return result;
     }
 
-    function revoke(bytes32 nonce) external onlyRole(MINTER_ROLE) {
+    function revoke(bytes32 nonce) external onlyRole(OPERATOR_ROLE) {
         if (_usedNonces[nonce]) revert AlreadyUsed();
         _usedNonces[nonce] = true;
         emit SignatureUsed(nonce, true);
