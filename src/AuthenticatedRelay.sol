@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity 0.8.24;
 
 import {AccessControl} from "openzeppelin-v5/access/AccessControl.sol";
 import {ECDSA} from "openzeppelin-v5/utils/cryptography/ECDSA.sol";

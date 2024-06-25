@@ -45,3 +45,17 @@ forge build
 ```shell
 forge test
 ```
+
+### Example: mint an ERC721
+Set the environment variables:
+- `RELAY_CONTRACT`: The authenticated relay address
+- `OPERATOR_PRIVATE_KEY`: The operator private key
+- `ERC721_CONTRACT`: The ERC721 contract address. It has a `mint(address,uint256)` function that can only be called by the authenticated relay
+- `RECIPIENT`: The NFT recipient
+- `SENDER_PRIVATE_KEY`: The key of the wallet that will broadcast the transaction
+- `NONCE`: A nonce to prevent replays
+
+Then run the script:
+```bash
+forge script script/MinterWithRelay.s.sol:MintWithRelay --broadcast --private-key $SENDER_PRIVATE_KEY
+```
