@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity 0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {RelayData, AuthenticatedRelay} from "../src/AuthenticatedRelay.sol";
@@ -38,7 +38,7 @@ contract AuthenticatedRelayTest is Test {
             nonce: nonce,
             to: address(token),
             validityStart: block.timestamp,
-            validityEnd: 1 days,
+            validityEnd: block.timestamp + 1 days,
             chainId: block.chainid,
             callData: callData
         });
